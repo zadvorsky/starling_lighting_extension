@@ -1,4 +1,4 @@
-package starling.extentions.lighting.shaders
+package starling.extensions.lighting.shaders
 {
 
 	/**

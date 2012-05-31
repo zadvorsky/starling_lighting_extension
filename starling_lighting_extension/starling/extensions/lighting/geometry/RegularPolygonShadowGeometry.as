@@ -1,10 +1,13 @@
-package starling.extentions.lighting.geometry
+package starling.extensions.lighting.geometry
 {
-	import com.zadvorsky.displayObjects.RegularPolygon;
-	import flash.geom.Vector3D;
-	import starling.extentions.lighting.core.Edge;
-	import starling.extentions.lighting.core.ShadowGeometry;
+	import starling.extensions.lighting.core.Edge;
+	import starling.extensions.lighting.core.ShadowGeometry;
 	import starling.utils.VertexData;
+
+	import com.zadvorsky.displayObjects.RegularPolygon;
+
+	import flash.geom.Point;
+	import flash.geom.Vector3D;
 
 
 
@@ -30,21 +33,21 @@ package starling.extentions.lighting.geometry
 			
 			var edges:Vector.<Edge> = new <Edge>[];
 			
-			var current:Vector3D = new Vector3D();
-			var next:Vector3D = new Vector3D();
+			var current:Point = new Point();
+			var next:Point = new Point();
 			
 			for (var i:int = 0; i < numEdges - 1; i++)
 			{
 				vertexData.getPosition(i, current);
 				vertexData.getPosition(i + 1, next);
 				
-				edges.push(new Edge(new Vector3D(current.x, current.y),new Vector3D(next.x, next.y)));
+				edges.push(new Edge(new Point(current.x, current.y),new Point(next.x, next.y)));
 			}
 			
 			vertexData.getPosition(i, current);
 			vertexData.getPosition(0, next);
 			
-			edges.push(new Edge(new Vector3D(current.x, current.y),new Vector3D(next.x, next.y)));
+			edges.push(new Edge(new Point(current.x, current.y),new Point(next.x, next.y)));
 			
 			return edges;
 		}

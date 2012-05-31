@@ -1,10 +1,10 @@
-package starling.extentions.lighting.core
+package starling.extensions.lighting.core
 {
 	import starling.core.RenderSupport;
 	import starling.display.DisplayObject;
 
-	import flash.geom.Matrix3D;
-	import flash.geom.Vector3D;
+	import flash.geom.Matrix;
+	import flash.geom.Point;
 
 	/**
 	 * @author Szenia Zadvornykh
@@ -16,7 +16,7 @@ package starling.extentions.lighting.core
 		
 		private var _displayObject:DisplayObject;
 		
-		private var tempTransformationMatrix:Matrix3D;
+		private var tempTransformationMatrix:Matrix;
 		
 		/**
 		 * abstract baseclass to hold geometry used for shadow casting
@@ -26,14 +26,14 @@ package starling.extentions.lighting.core
 		{
 			_displayObject = displayObject;
 			
-			tempTransformationMatrix = new Matrix3D();
+			tempTransformationMatrix = new Matrix();
 			
 			_modelEdges = createEdges();
 			_worldEdges = new <Edge>[];
 			
 			for each(var edge:Edge in _modelEdges)
 			{
-				_worldEdges.push(new Edge(new Vector3D, new Vector3D()));
+				_worldEdges.push(new Edge(new Point(), new Point()));
 			}
 		}
 		
@@ -59,8 +59,8 @@ package starling.extentions.lighting.core
 				modelEdge = _modelEdges[i];
 				worldEdge = _worldEdges[i];
 				
-				worldEdge.start = tempTransformationMatrix.transformVector(modelEdge.start);
-				worldEdge.end = tempTransformationMatrix.transformVector(modelEdge.end);
+				worldEdge.start = tempTransformationMatrix.transformPoint(modelEdge.start);
+				worldEdge.end = tempTransformationMatrix.transformPoint(modelEdge.end);
 			}
 		}
 

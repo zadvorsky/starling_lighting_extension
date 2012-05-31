@@ -1,4 +1,4 @@
-package starling.extentions.lighting.core
+package starling.extensions.lighting.core
 {
 	import com.adobe.utils.PerspectiveMatrix3D;
 	import flash.display3D.Context3D;
@@ -17,9 +17,9 @@ package starling.extentions.lighting.core
 	import starling.core.RenderSupport;
 	import starling.core.Starling;
 	import starling.display.DisplayObject;
-	import starling.extentions.lighting.shaders.LightLayerLightMapShader;
-	import starling.extentions.lighting.shaders.LightLayerPointLightShader;
-	import starling.extentions.lighting.shaders.LightLayerShadowShader;
+	import starling.extensions.lighting.shaders.LightLayerLightMapShader;
+	import starling.extensions.lighting.shaders.LightLayerPointLightShader;
+	import starling.extensions.lighting.shaders.LightLayerShadowShader;
 	import starling.utils.Color;
 
 

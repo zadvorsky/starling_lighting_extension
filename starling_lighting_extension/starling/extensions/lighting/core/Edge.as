@@ -1,40 +1,40 @@
-package starling.extentions.lighting.core
+package starling.extensions.lighting.core
 {
-	import flash.geom.Vector3D;
+	import flash.geom.Point;
 	/**
 	 * ...
 	 * @author Ryan Speets
 	 */
 	public class Edge 
 	{
-		private var _start:Vector3D;
-		private var _end:Vector3D;
+		private var _start:Point;
+		private var _end:Point;
 		
 		/**
 		 * simple class to hold the start and end points of an edge used for shadow casting
 		 */
-		public function Edge(start:Vector3D, end:Vector3D)
+		public function Edge(start:Point, end:Point)
 		{
 			_start = start;
 			_end = end;
 		}
 
-		public function get start():Vector3D
+		public function get start():Point
 		{
 			return _start;
 		}
 
-		public function set start(start:Vector3D):void
+		public function set start(start:Point):void
 		{
 			_start = start;
 		}
 
-		public function get end():Vector3D
+		public function get end():Point
 		{
 			return _end;
 		}
 
-		public function set end(end:Vector3D):void
+		public function set end(end:Point):void
 		{
 			_end = end;
 		}

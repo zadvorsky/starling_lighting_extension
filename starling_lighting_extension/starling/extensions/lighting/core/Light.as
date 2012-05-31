@@ -1,4 +1,4 @@
-package starling.extentions.lighting.core
+package starling.extensions.lighting.core
 {
 	import starling.utils.Color;
 	/**

@@ -1,11 +1,12 @@
-package starling.extentions.lighting.geometry
+package starling.extensions.lighting.geometry
 {
-	import flash.geom.Vector3D;
-	import starling.display.DisplayObject;
 	import starling.display.Quad;
-	import starling.extentions.lighting.core.Edge;
-	import starling.extentions.lighting.core.ShadowGeometry;
+	import starling.extensions.lighting.core.Edge;
+	import starling.extensions.lighting.core.ShadowGeometry;
 	import starling.utils.VertexData;
+
+	import flash.geom.Point;
+	import flash.geom.Vector3D;
 
 
 	/**
@@ -33,16 +34,16 @@ package starling.extentions.lighting.geometry
 			
 			var edges:Vector.<Edge> = new <Edge>[];
 			
-			var start:Vector3D;
-			var end:Vector3D;
+			var start:Point;
+			var end:Point;
 			var index:int;
 			
 			for(var i:int; i < numEdges; i++)
 			{
 				index = i * 2;
 				
-				start = new Vector3D();
-				end = new Vector3D();
+				start = new Point();
+				end = new Point();
 				
 				vertexData.getPosition(indices[index], start)		
 				vertexData.getPosition(indices[index + 1], end);
