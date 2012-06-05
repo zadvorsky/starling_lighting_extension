@@ -3,12 +3,14 @@ package starling.extensions.lighting.shaders
 
 	/**
 	 * @author Szenia Zadvornykh
+	 * 
+	 * original shader by Ryan Speets @ ryanspeets.com
 	 */
-	public class LightLayerShadowShader extends StarlingShaderBase
+	public class PositionalLightShadowShader extends StarlingShaderBase
 	{
-		private const NAME:String = "LightLayerShadowShader";
+		private const NAME:String = "PositionalLightShadowShader";
 		
-		public function LightLayerShadowShader()
+		public function PositionalLightShadowShader()
 		{
 			super(NAME);
 		}

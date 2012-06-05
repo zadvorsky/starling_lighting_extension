@@ -6,22 +6,25 @@ package
 	import starling.display.Sprite;
 	import starling.events.EnterFrameEvent;
 	import starling.events.Event;
-	import starling.extentions.lighting.core.Light;
-	import starling.extentions.lighting.core.LightLayer;
-	import starling.extentions.lighting.geometry.QuadShadowGeometry;
+	import starling.extensions.lighting.core.LightLayer;
+	import starling.extensions.lighting.geometry.QuadShadowGeometry;
+	import starling.extensions.lighting.lights.DirectionalLight;
+	import starling.extensions.lighting.lights.PointLight;
+	import starling.extensions.lighting.lights.SpotLight;
 
 	import flash.display.Stage;
 	import flash.events.MouseEvent;
 
+
 	/**
 	 * @author Szenia Zadvornykh
 	 */
-	public class StarlingLightingExample extends Sprite
+	public class BasicLightingExample extends Sprite
 	{
 		private var lightLayer:LightLayer;
 		
-		private var mouseLight:Light;
-		private var lights:Vector.<Light>;
+		private var mouseLight:PointLight;
+		private var lights:Vector.<PointLight>;
 		
 		private var geometry:Vector.<DisplayObject>;
 				
@@ -29,7 +32,7 @@ package
 		private var nativeStageWidth:int = 1000;
 		private var nativeStageHeight:int = 1000;
 		
-		public function StarlingLightingExample()
+		public function BasicLightingExample()
 		{
 			addEventListener(Event.ADDED_TO_STAGE, initialize);
 		}
@@ -46,7 +49,7 @@ package
 			
 			//create the LightLayer coverting the stage
 			//this where the lights and shadows are rendered
-			lightLayer = new LightLayer(nativeStageWidth, nativeStageHeight, 0x000000);
+			lightLayer = new LightLayer(nativeStageWidth, nativeStageHeight, 0x000000, 0);
 			
 			//uncomment this to add a background image with random perlin noise to see how the lights might look on a texture 
 //			var bmd:BitmapData = new BitmapData(nativeStageWidth, nativeStageHeight, false, 0xffffffff);
@@ -67,11 +70,27 @@ package
 		private function createLights():void
 		{
 			//create a white light that will follow the mouse position
-			mouseLight = new Light(0, 0, 400, 0xffffff);
+			mouseLight = new PointLight(0, 0, 400, 0xffffff, 1);
 			//add it to the light layer
 			lightLayer.addLight(mouseLight);
 			
-			lights = new <Light>[];
+			lights = new <PointLight>[];
+			
+			//create a low intensity directional light, casting shadows at a 60 degree angle
+			var directionalLight:DirectionalLight = new DirectionalLight(60, 0xffffff, 0.1);
+			lightLayer.addLight(directionalLight);
+			
+			//create a few spotlights
+			var spotLight:SpotLight;
+			
+			spotLight = new SpotLight(0, 0, 600, 45, 60, 20, 0xff0000, 1);
+			lightLayer.addLight(spotLight);
+
+			spotLight = new SpotLight(nativeStageWidth / 2, 0, 600, 90, 60, 20, 0x00ff00, 1);
+			lightLayer.addLight(spotLight);
+
+			spotLight = new SpotLight(nativeStageWidth, 0, 600, 135, 60, 20, 0x0000ff, 1);
+			lightLayer.addLight(spotLight);
 			
 			//uncomment this to add an arbitrary number of random lights
 //			var light:Light;
@@ -94,7 +113,7 @@ package
 			var h:int;
 			
 			//create an arbitrary number of quads to act as shadow geometry
-			for(var i:int; i < 150; i++)
+			for(var i:int; i < 50; i++)
 			{
 				w = 10 + Math.round(Math.random() * 10);
 				h = 4;
@@ -122,13 +141,13 @@ package
 
 		private function clickHandler(event:MouseEvent):void
 		{
-			var light:Light;
-			light = new Light(nativeStage.mouseX, nativeStage.mouseY, 100 + Math.random() * 500, Math.random() * 0xffffff, 1);
+			var light:PointLight;
+			light = new PointLight(nativeStage.mouseX, nativeStage.mouseY, 100 + Math.random() * 500, Math.random() * 0xffffff, 1);
 				
 			lightLayer.addLight(light);
 			lights.push(light);
 		}
-
+		
 		private function update(event:EnterFrameEvent):void
 		{
 			mouseLight.x = nativeStage.mouseX;

@@ -3,11 +3,11 @@ package starling.extensions.lighting.shaders
 	/**
 	 * @author Szenia Zadvornykh
 	 */
-	public class LightLayerLightMapShader extends StarlingShaderBase
+	public class LightMapShader extends StarlingShaderBase
 	{
-		private const NAME:String = "LightLayerLightMapShader";
+		private const NAME:String = "LightMapShader";
 		
-		public function LightLayerLightMapShader()
+		public function LightMapShader()
 		{
 			super(NAME);
 		}
