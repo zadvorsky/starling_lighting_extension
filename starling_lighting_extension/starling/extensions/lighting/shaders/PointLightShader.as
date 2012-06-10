@@ -1,6 +1,12 @@
 package starling.extensions.lighting.shaders
 {
 
+	import starling.extensions.lighting.lights.PointLight;
+
+	import flash.display3D.Context3D;
+	import flash.display3D.Context3DProgramType;
+	import flash.display3D.Context3DVertexBufferFormat;
+	import flash.display3D.VertexBuffer3D;
 	/**
 	 * @author Szenia Zadvornykh
 	 * 
@@ -10,9 +16,45 @@ package starling.extensions.lighting.shaders
 	{
 		private const NAME:String = "PointLightShader";
 		
-		public function PointLightShader()
+		private var params:Vector.<Number>;
+		private var _vertexBuffer:VertexBuffer3D;
+		private var _uvBuffer:VertexBuffer3D;
+		
+		public function PointLightShader(width:int, height:int)
 		{
 			super(NAME);
+			
+			params = new Vector.<Number>(12);
+			
+			params[2] = width;
+			params[3] = height;
+			params[4] = 0;
+			params[5] = 1;
+			params[6] = 0;
+			params[11] = 1;
+		}
+		
+		public function setDependencies(vertexBuffer:VertexBuffer3D, uvBuffer:VertexBuffer3D):void
+		{
+			_vertexBuffer = vertexBuffer;
+			_uvBuffer = uvBuffer;
+		}
+		
+		public function set light(light:PointLight):void
+		{
+			params[0] = light.x;
+			params[1] = light.y;
+			params[7] = light.radius;
+			params[8] = light.red;
+			params[9] = light.green;
+			params[10] = light.blue;
+		}
+				
+		override protected function activateHook(context:Context3D):void
+		{
+			context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 1, params);
+			context.setVertexBufferAt(0, _vertexBuffer, 0, Context3DVertexBufferFormat.FLOAT_2);
+			context.setVertexBufferAt(1, _uvBuffer, 0, Context3DVertexBufferFormat.FLOAT_2);
 		}
 		
 		override protected function vertexShaderProgram():String

@@ -1,5 +1,9 @@
 package starling.extensions.lighting.shaders
 {
+	import flash.display3D.Context3D;
+	import flash.display3D.Context3DProgramType;
+	import flash.display3D.Context3DVertexBufferFormat;
+	import flash.display3D.VertexBuffer3D;
 
 	/**
 	 * @author Szenia Zadvornykh
@@ -9,10 +13,30 @@ package starling.extensions.lighting.shaders
 	public class PositionalLightShadowShader extends StarlingShaderBase
 	{
 		private const NAME:String = "PositionalLightShadowShader";
+	
+		private var _vertexBuffer:VertexBuffer3D;
+		private var params:Vector.<Number>;
 		
+				
 		public function PositionalLightShadowShader()
 		{
 			super(NAME);
+			
+			params = new Vector.<Number>(4);
+		}
+		
+		public function setDependencies(vertexBuffer:VertexBuffer3D, lightX:int, lightY:int):void
+		{
+			_vertexBuffer = vertexBuffer;
+			
+			params[0] = lightX;
+			params[1] = lightY;
+		}
+		
+		override protected function activateHook(context:Context3D):void
+		{
+			context.setProgramConstantsFromVector(Context3DProgramType.VERTEX, 1, params);
+			context.setVertexBufferAt(0, _vertexBuffer, 0, Context3DVertexBufferFormat.FLOAT_3);
 		}
 		
 		override protected function vertexShaderProgram():String

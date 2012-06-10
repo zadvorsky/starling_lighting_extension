@@ -1,6 +1,11 @@
 package starling.extensions.lighting.shaders
 {
-	import starling.extensions.lighting.shaders.StarlingShaderBase;
+	import starling.extensions.lighting.lights.DirectionalLight;
+
+	import flash.display3D.Context3D;
+	import flash.display3D.Context3DProgramType;
+	import flash.display3D.Context3DVertexBufferFormat;
+	import flash.display3D.VertexBuffer3D;
 
 	/**
 	 * @author Szenia
@@ -9,9 +14,28 @@ package starling.extensions.lighting.shaders
 	{
 		private const NAME:String = "DirectionalLightShadowShader";
 		
+		private var _vertexBuffer:VertexBuffer3D;
+		private var params:Vector.<Number>;
+		
 		public function DirectionalLightShadowShader()
 		{
 			super(NAME);
+			
+			params = new Vector.<Number>(4);
+		}
+		
+		public function setDependencies(vertexBuffer:VertexBuffer3D, light:DirectionalLight):void
+		{
+			_vertexBuffer = vertexBuffer;
+			
+			params[0] = light.directionVector.x;
+			params[1] = light.directionVector.y;
+		}
+				
+		override protected function activateHook(context:Context3D):void
+		{
+			context.setProgramConstantsFromVector(Context3DProgramType.VERTEX, 1, params);
+			context.setVertexBufferAt(0, _vertexBuffer, 0, Context3DVertexBufferFormat.FLOAT_3);
 		}
 		
 		override protected function vertexShaderProgram():String
@@ -19,7 +43,6 @@ package starling.extensions.lighting.shaders
 			//vc1 = [dx, dy, 0, 0]
 			var program:String =
 			
-//			"sub vt0.xy, va0.xy, vc1.xy \n" + //world xy - light xy = delta xy
 			"mul vt0.xy, vc1.xy, va0.z \n" + //delta xy * shadow multiplier (0 || 1) = shadow xy
 			
 			"mul vt0.xy, vt0.xy, vc0.z \n" + //shadow xy * 1000

@@ -1,5 +1,6 @@
 package starling.extensions.lighting.core
 {
+	import starling.extensions.lighting.shaders.GaussianBlurShader;
 	import starling.extensions.lighting.shaders.SpotLightShader;
 	import starling.extensions.lighting.lights.SpotLight;
 	import starling.extensions.lighting.shaders.DirectionalLightShadowShader;
@@ -39,26 +40,25 @@ package starling.extensions.lighting.core
 		
 		private var pointLightShader:PointLightShader;
 		private var pointLightShadowShader:PositionalLightShadowShader;
-
 		private var directionalLightShader:DirectionalLightShader;
 		private var directionalLightShadowShader:DirectionalLightShadowShader;
-		
 		private var spotLightShader:SpotLightShader;
-
 		private var sceneShader:LightMapShader;
+		private var blurShader:GaussianBlurShader;
 		
 		private var sceneVertexBuffer:VertexBuffer3D;
 		private var sceneUVBuffer:VertexBuffer3D;
 		private var sceneIndexBuffer:IndexBuffer3D;
 
-		private var lightMap:Texture;
+		private var lightMapIn:Texture;
+		private var lightMapOut:Texture;
 		
 		private var _width:int;
 		private var _height:int;
 		private var legalWidth:uint;
 		private var legalHeight:uint;
-		//rgb
 		private var _ambientColor:Vector.<Number>;
+		private var _shadowSoftness:Number;
 		
 		private var projectionMatrix:PerspectiveMatrix3D;
 		
@@ -82,11 +82,13 @@ package starling.extensions.lighting.core
 		 * @param height height of the display
 		 * @param ambientColor color of the ambient light, default black. This does not cast shadows.
 		 * @param ambientColorIntencity intencity of the ambient light. Values range from 0 to 1
+		 * @param shadowSoftness control how soft the shadow eges are. Minimum of 1
 		 */
-		public function LightLayer(width:int, height:int, ambientColor:uint = 0x000000, ambientColorIntencity:Number = 1)
+		public function LightLayer(width:int, height:int, ambientColor:uint = 0x000000, ambientColorIntensity:Number = 1, shadowSoftness:Number = 2)
 		{
 			_width = width;
 			_height = height;
+			_shadowSoftness = shadowSoftness;
 						
 			lights = new <LightBase>[];
 			geometry = new <ShadowGeometry>[];
@@ -95,9 +97,9 @@ package starling.extensions.lighting.core
 			createScene();
 			createShaders();
 			
-			touchable = false;
+			setAmbientLightColor(ambientColor, ambientColorIntensity);
 			
-			setAmbientLightColor(ambientColor, ambientColorIntencity);
+			touchable = false;
 		}
 
 		private function createScene():void
@@ -114,10 +116,33 @@ package starling.extensions.lighting.core
 			legalWidth = nextPowerOfTwo(_width);
 			legalHeight = nextPowerOfTwo(_height);
 			
-			lightMap = context.createTexture(legalWidth, legalHeight, Context3DTextureFormat.BGRA, true);
+			lightMapIn = context.createTexture(legalWidth, legalHeight, Context3DTextureFormat.BGRA, true);
+			lightMapOut = context.createTexture(legalWidth, legalHeight, Context3DTextureFormat.BGRA, true);
 			
 			projectionMatrix = new PerspectiveMatrix3D();
 			projectionMatrix.orthoOffCenterLH(0, legalWidth, -legalHeight, 0, -1, 1);
+		}
+		
+		private function createShaders():void
+		{
+			pointLightShader = new PointLightShader(legalWidth, legalHeight);
+			pointLightShader.setDependencies(sceneVertexBuffer, sceneUVBuffer);
+
+			spotLightShader = new SpotLightShader(legalWidth, legalHeight);
+			spotLightShader.setDependencies(sceneVertexBuffer, sceneUVBuffer);
+
+			directionalLightShader = new DirectionalLightShader();
+			directionalLightShader.setDependencies(sceneVertexBuffer);
+
+			pointLightShadowShader = new PositionalLightShadowShader();
+			
+			directionalLightShadowShader = new DirectionalLightShadowShader();
+			
+			blurShader = new GaussianBlurShader(legalWidth, legalHeight, _shadowSoftness >= 1 ? _shadowSoftness : 1);
+			blurShader.setDependencies(lightMapIn, lightMapOut, sceneVertexBuffer, sceneUVBuffer);
+
+			sceneShader = new LightMapShader(_width / legalWidth, _height / legalHeight);
+			sceneShader.setDependencies(lightMapOut, sceneVertexBuffer, sceneUVBuffer);
 		}
 		
 		/**
@@ -176,28 +201,21 @@ package starling.extensions.lighting.core
 		 * @param ambientColor color of the ambient light, default black. This does not cast shadows.
 		 * @param ambientColorIntencity intencity of the ambient light. Values range from 0 to 1
 		 */
-		public function setAmbientLightColor(color:uint, intencity:Number = 0):void
+		public function setAmbientLightColor(color:uint, intensity:Number = 0):void
 		{
-			var r:Number = Color.getRed(color) / 255;
-			var g:Number = Color.getGreen(color) / 255;
-			var b:Number = Color.getBlue(color) / 255;
-			
-			_ambientColor[0] = r * intencity;
-			_ambientColor[1] = g * intencity;
-			_ambientColor[2] = b * intencity;
-			_ambientColor[3] = 0;
+			sceneShader.setAmbientColor(color, intensity);
 		}
 
 		override public function render(support:RenderSupport, parentAlpha:Number):void
 		{
 			var context:Context3D = Starling.context;
-
+			
 			support.finishQuadBatch();
 			if(geometry.length > 0) projectGeometry();
 			
-			context.setRenderToTexture(lightMap, true, 16);
+			context.setRenderToTexture(lightMapIn, true);
 			context.setScissorRectangle(new Rectangle(0, 0, _width, _height));
-			context.clear(0, 0, 0, 0.5, 1, 0, Context3DClearMask.ALL);
+			context.clear(0, 0, 0, 1, 1, 0, Context3DClearMask.ALL);
 			
 			context.setProgramConstantsFromVector(Context3DProgramType.VERTEX, 0, Vector.<Number>([0, 1, 10000, 0]));
 			context.setProgramConstantsFromMatrix(Context3DProgramType.VERTEX, 2, projectionMatrix, true);
@@ -207,11 +225,6 @@ package starling.extensions.lighting.core
 			{
 				renderLight(l, context);
 			}
-			
-			context.setRenderToBackBuffer();
-			
-			context.setDepthTest(false, Context3DCompareMode.ALWAYS);
-			context.setScissorRectangle(null);
 			
 			renderLightMap(context);
 			
@@ -293,13 +306,16 @@ package starling.extensions.lighting.core
 			switch(true)
 			{
 				case light is PointLight:
-					setPointLightShadowConstants(light as PointLight, context);
+					pointLightShadowShader.setDependencies(geometryVertexBuffer, PointLight(light).x, PointLight(light).y);
+					pointLightShadowShader.activate(context);
 					break;
 				case light is DirectionalLight:
-					setDirectionalLightShadowConstants(light as DirectionalLight, context);
+					directionalLightShadowShader.setDependencies(geometryVertexBuffer, light as DirectionalLight);
+					directionalLightShadowShader.activate(context);
 					break;
 				case light is SpotLight:
-					setSpotLightShadowConstants(light as SpotLight, context);
+					pointLightShadowShader.setDependencies(geometryVertexBuffer, SpotLight(light).x, SpotLight(light).y);
+					pointLightShadowShader.activate(context);
 					break;
 				default:
 					throw new ArgumentError("unsupported light type");
@@ -309,26 +325,7 @@ package starling.extensions.lighting.core
 			context.setStencilActions(Context3DTriangleFace.FRONT, Context3DCompareMode.ALWAYS, Context3DStencilAction.SET);
 			context.setColorMask(false, false, false, false);
 			
-			context.setVertexBufferAt(0, geometryVertexBuffer, 0, Context3DVertexBufferFormat.FLOAT_3);
 			context.drawTriangles(geometryIndexBuffer);
-		}
-
-		private function setPointLightShadowConstants(light:PointLight, context:Context3D):void
-		{
-			context.setProgram(pointLightShadowShader.program);
-			context.setProgramConstantsFromVector(Context3DProgramType.VERTEX, 1, Vector.<Number>([light.x, light.y, 0, 0]));
-		}
-
-		private function setDirectionalLightShadowConstants(light:DirectionalLight, context:Context3D):void
-		{
-			context.setProgram(directionalLightShadowShader.program);
-			context.setProgramConstantsFromVector(Context3DProgramType.VERTEX, 1, Vector.<Number>([light.directionVector.x, light.directionVector.y, 0, 0]));
-		}
-
-		private function setSpotLightShadowConstants(light:SpotLight, context:Context3D):void
-		{
-			context.setProgram(pointLightShadowShader.program);
-			context.setProgramConstantsFromVector(Context3DProgramType.VERTEX, 1, Vector.<Number>([light.x, light.y, 0, 0]));
 		}
 
 		private function lightPass(light:LightBase, context:Context3D):void
@@ -336,13 +333,16 @@ package starling.extensions.lighting.core
 			switch(true)
 			{
 				case light is PointLight:
-					setPointLightConstants(light as PointLight, context);
+					pointLightShader.light = light as PointLight;
+					pointLightShader.activate(context);
 					break;
 				case light is DirectionalLight:
-					setDirectionalLightConstants(light as DirectionalLight, context);
+					directionalLightShader.light = light as DirectionalLight;
+					directionalLightShader.activate(context);
 					break;
 				case light is SpotLight:
-					setSpotLightConstants(light as SpotLight, context);
+					spotLightShader.light = light as SpotLight;
+					spotLightShader.activate(context);
 					break;
 				default:
 					throw new ArgumentError("unsupported light type");
@@ -351,58 +351,26 @@ package starling.extensions.lighting.core
 			context.setStencilReferenceValue(0);
 			context.setStencilActions(Context3DTriangleFace.FRONT, Context3DCompareMode.EQUAL, Context3DStencilAction.KEEP);
 			context.setColorMask(true, true, true, true);
-			
-			context.setVertexBufferAt(0, sceneVertexBuffer, 0, Context3DVertexBufferFormat.FLOAT_2);
 			context.setBlendFactors(Context3DBlendFactor.ONE, Context3DBlendFactor.ONE);			
 			
 			context.drawTriangles(sceneIndexBuffer);
 		}
 
-		private function setPointLightConstants(light:PointLight, context:Context3D):void
-		{
-			context.setProgram(pointLightShader.program);
-			context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 1,Vector.<Number>([light.x, light.y, legalWidth, legalHeight, 0, 1, 0, light.radius, light.red, light.green, light.blue, 1]));
-			context.setVertexBufferAt(1, sceneUVBuffer, 0, Context3DVertexBufferFormat.FLOAT_2);
-		}
-
-		private function setDirectionalLightConstants(light:DirectionalLight, context:Context3D):void
-		{
-			context.setProgram(directionalLightShader.program);
-			context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 1,Vector.<Number>([light.red, light.green, light.blue, 1]));
-		}
-		
-		private function setSpotLightConstants(light:SpotLight, context:Context3D):void
-		{
-			context.setProgram(spotLightShader.program);
-			context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 1,Vector.<Number>([light.x, light.y, legalWidth, legalHeight, 0, 1, light.focus, light.radius, light.red, light.green, light.blue, 1, light.directionVector.x, light.directionVector.y, 0, light.halfConeAngleCos()]));
-			context.setVertexBufferAt(1, sceneUVBuffer, 0, Context3DVertexBufferFormat.FLOAT_2);
-		}
-
 		private function renderLightMap(context:Context3D):void
 		{
-			context.setProgram(sceneShader.program);
-			
-			context.setTextureAt(0, lightMap);
-			context.setProgramConstantsFromVector(Context3DProgramType.VERTEX, 0, Vector.<Number>([_width / legalWidth, _height / legalHeight, 0, 0]));
-			context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 0, _ambientColor);
-			context.setVertexBufferAt(0, sceneVertexBuffer, 0, Context3DVertexBufferFormat.FLOAT_2);
-			context.setVertexBufferAt(1, sceneUVBuffer, 0, Context3DVertexBufferFormat.FLOAT_2);
-			context.setBlendFactors(Context3DBlendFactor.DESTINATION_COLOR, Context3DBlendFactor.ZERO);
-			
+			blurShader.activate(context);
 			context.drawTriangles(sceneIndexBuffer);
-		}
-
-		private function createShaders():void
-		{
-			pointLightShader = new PointLightShader();
-			pointLightShadowShader = new PositionalLightShadowShader();
 			
-			directionalLightShader = new DirectionalLightShader();
-			directionalLightShadowShader = new DirectionalLightShadowShader();
+			blurShader.activateSecondPass(context);			
+			context.drawTriangles(sceneIndexBuffer);
 			
-			spotLightShader = new SpotLightShader();
+			context.setRenderToBackBuffer();
+			context.setDepthTest(false, Context3DCompareMode.ALWAYS);
+			context.setScissorRectangle(null);
 			
-			sceneShader = new LightMapShader();
+			sceneShader.activate(context);
+			context.setBlendFactors(Context3DBlendFactor.DESTINATION_COLOR, Context3DBlendFactor.ZERO);
+			context.drawTriangles(sceneIndexBuffer);
 		}
 
 		override public function getBounds(targetSpace:DisplayObject, resultRect:Rectangle = null):Rectangle
@@ -421,7 +389,7 @@ package starling.extensions.lighting.core
 			geometryVertexBuffer.dispose();
 			geometryIndexBuffer.dispose();
 			
-			lightMap.dispose();
+			lightMapIn.dispose();
 		}
 
 		private function nextPowerOfTwo(n:uint):uint

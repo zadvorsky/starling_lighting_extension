@@ -5,6 +5,7 @@ package starling.extensions.lighting.shaders
 
 	import com.adobe.utils.AGALMiniAssembler;
 
+	import flash.display3D.Context3D;
 	import flash.display3D.Context3DProgramType;
 	import flash.display3D.Program3D;
 	import flash.utils.ByteArray;
@@ -59,6 +60,17 @@ package starling.extensions.lighting.shaders
 		protected function fragmentShaderProgram():String
 		{
 			throw new AbstractMethodError();
+		}
+		
+		final public function activate(context:Context3D):void
+		{
+			context.setProgram(program);
+			
+			activateHook(context);
+		}
+
+		protected function activateHook(context:Context3D):void
+		{
 		}
 		
 		final public function get program():Program3D
